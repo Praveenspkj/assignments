@@ -1,22 +1,54 @@
 const { Router } = require("express");
 const adminMiddleware = require("../middleware/admin");
+const { Admin, Course } = require("../db");
 const router = Router();
+const jwt = require("jsonwebtoken");
+const { SECRET_KEY } = require("../constants");
 
 // Admin Routes
-app.post('/signup', (req, res) => {
-    // Implement admin signup logic
+router.post('/signup', async (req, res) => {
+    const { username, password } = req.body;
+    
+    await Admin.create(
+        {
+            username, 
+            password
+        });
+
+    res.status(201).json(
+        { message: 'Admin created successfully' }
+    )
 });
 
-app.post('/signin', (req, res) => {
-    // Implement admin signup logic
+router.post('/signin', async (req, res) => {
+    const {username} = req.body;
+    
+    const admin = await Admin.findOne({username:username});
+
+    const token = jwt.sign({username:admin.username}, SECRET_KEY);
+    
+    res.status(200).json({
+        token,
+    })
 });
 
-app.post('/courses', adminMiddleware, (req, res) => {
-    // Implement course creation logic
+router.post('/courses', adminMiddleware, async (req, res) => {
+    const {title, description, price, imageLink} = req.body;
+    
+    const newCourse = await Course.create({
+        title, description, price, imageLink
+    })
+
+    res.status(200).json(
+        { message: 'Course created successfully', courseId: newCourse._id }
+    )
 });
 
-app.get('/courses', adminMiddleware, (req, res) => {
-    // Implement fetching all courses logic
+router.get('/courses', adminMiddleware, async (req, res) => {
+    const courses = await Course.find();
+    res.status(200).json({
+        courses
+    });
 });
 
 module.exports = router;
